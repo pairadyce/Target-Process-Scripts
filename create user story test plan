@@ -1,0 +1,73 @@
+const TPName = args.Current.Name;
+const TCName = args.Current.Name;
+const api = require("targetprocess/api/v2");
+
+//Get Feature ID
+const featureId = args.Current.Feature.Id;
+
+//Get ID of the Feature's Test Plan
+const response = await api.queryAsync("TestPlan", {
+  select: "id",
+  where: `LinkedGeneral.Id = ${featureId}`
+});
+const featureTP = response[0] ? response[0] : null;
+
+
+//If Feature Test Plan exists create US Test Plan and link it to Feature Test Plan
+if (featureTP !== null) {
+  return {
+    command: "targetprocess:CreateResource",
+    payload: {
+      resourceType: "TestPlan",
+      fields: {
+        Name: TPName,
+        Project: { ID: args.Current.Project.Id },
+        LinkedGeneral: { ID: args.ResourceId },
+        Owner: { ID: args.Current.Owner.Id },
+        Release: { ID: args.Current.Release.Id },
+        TestCases: {
+          Items: [
+            { Name: TCName, Project: { ID: args.Current.Project.Id }, Owner: { ID: args.Current.Owner.Id } }
+          ]
+        },
+        ParentTestPlans: {
+          Items: [
+            { Id: featureTP }
+          ]
+        }
+      }
+    }
+  }
+}; if (response[0] != null) {
+  return {
+    command: "targetprocess:UpdateResource",
+    payload: {
+      resourceType: args.ResourceType,
+      resourceId: args.ResourceId,
+      fields: {
+        Name: response[0]
+      }
+    }
+  }
+}
+;
+
+//Else create US Test Plan without Feature Test Plan
+return {
+  command: "targetprocess:CreateResource",
+  payload: {
+    resourceType: "TestPlan",
+    fields: {
+      Name: TPName,
+      Project: { ID: args.Current.Project.Id },
+      LinkedGeneral: { ID: args.ResourceId },
+      Owner: { ID: args.Current.Owner.Id },
+      Release: { ID: args.Current.Release.Id },
+      TestCases: {
+        Items: [
+          { Name: TCName, Project: { ID: args.Current.Project.Id }, Owner: { ID: args.Current.Owner.Id } }
+        ]
+      }
+    }
+  }
+};

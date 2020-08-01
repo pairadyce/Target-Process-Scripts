@@ -1,0 +1,75 @@
+const api = context.getService("targetprocess/api/v2");
+
+//Get Feature Test Plan Run ID
+const featurePlanRun = args.Current.RootTestPlanRun.Id;
+
+//Get Feature Test Plan Run ID
+const query1 = await api.queryAsync("TestPlanRun", {
+  select: "testplan.id",
+  where: "id == " + featurePlanRun
+});
+const featurePlan = query1[0] ? query1[0] : null;
+console.log(featurePlan + " is the Feature Test Plan Run ID")
+
+//Get Feature Test Plan ID and Feature ID
+const query3 = await api.queryAsync("TestPlan", {
+  select: "{id,linkedgeneral.id}",
+  where: "id == " + featurePlan
+});
+const featurePlanId = query3[0].id ? query3[0].id : null;
+const featureId = query3[0].linkedgeneral.id ? query3[0].linkedgeneral.id : null;
+console.log(featurePlanId + " is the Feature Test Plan ID")
+
+//Feature ID Confirmation
+const queryCheck = await api.queryAsync("Feature", {
+  select: "id",
+  where: "id == " + featureId
+});
+const featureHere = queryCheck[0] ? queryCheck[0] : null;
+
+//Update the Test Plan State to "Ready for Formal"
+if (featureHere != null) {
+  return {
+    command: "targetprocess:UpdateResource",
+    payload: {
+      resourceType: "TestPlan",
+      resourceId: featurePlanId,
+      fields: {
+        EntityState: { Id: 1150 }
+      }
+    }
+  };
+}
+
+const api = context.getService("targetprocess/api/v2");
+
+//Get Test Plan Run IDs
+const userPlanRun = args.Current.TestPlanRun.Id;
+
+//Get User Test Plan Run ID
+const query = await api.queryAsync("TestPlanRun", {
+  select: "testplan.id",
+  where: "id == " + userPlanRun
+});
+const userPlan = query[0] ? query[0] : null;
+console.log(userPlan + " is the User Test Plan Run ID")
+
+//Get User Story Test Plan ID
+const query2 = await api.queryAsync("TestPlan", {
+  select: "id",
+  where: "id == " + userPlan
+});
+const userPlanId = query2[0] ? query2[0] : null;
+console.log(userPlanId + " is the User Test Plan ID")
+
+//Update User Story Test Plan to "Ready for Formal"
+return {
+  command: "targetprocess:UpdateResource",
+  payload: {
+    resourceType: "TestPlan",
+    resourceId: userPlanId,
+    fields: {
+      EntityState: { Id: 1150 }
+    }
+  }
+};

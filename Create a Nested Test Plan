@@ -1,0 +1,62 @@
+const TPName = args.Current.Name;
+const api = require("targetprocess/api/v2");
+
+//Get Epic ID
+const epicId = args.Current.Epic.Id;
+
+//Get ID of the Epic's Test Plan
+const response = await api.queryAsync("TestPlan", {
+  select: "id",
+  where: `LinkedGeneral.Id = ${epicId}`
+});
+const epicTP = response[0] ? response[0] : null;
+
+
+//If Epic Test Plan exists create Feature Test Plan and link it to Epic Test Plan
+if (epicTP !== null) {
+  return {
+    command: "targetprocess:CreateResource",
+    payload: {
+      resourceType: "TestPlan",
+      fields: {
+        Name: TPName,
+        Project: { ID: args.Current.Project.Id },
+        LinkedGeneral: { ID: args.ResourceId },
+        Owner: { ID: args.Current.Owner.Id },
+        ParentTestPlans: {
+          Items: [
+            { Id: epicTP }
+          ]
+        }
+      }
+    }
+  }
+};
+
+if (response[0] != null) {
+  return {
+    command: "targetprocess:UpdateResource",
+    payload: {
+      resourceType: args.ResourceType,
+      resourceId: args.ResourceId,
+      fields: {
+        Name: response[0]
+      }
+    }
+  }
+}
+;
+
+//Else create Feature Test Plan without Epic Test Plan
+return {
+  command: "targetprocess:CreateResource",
+  payload: {
+    resourceType: "TestPlan",
+    fields: {
+      Name: response[0],
+      Project: { ID: args.Current.Project.Id },
+      LinkedGeneral: { ID: args.ResourceId },
+      Owner: { ID: args.Current.Owner.Id },
+    }
+  }
+};
